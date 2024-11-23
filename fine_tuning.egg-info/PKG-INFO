@@ -1,0 +1,9 @@
+Metadata-Version: 2.1
+Name: fine_tuning
+Version: 0.1
+Requires-Dist: streamlit
+Requires-Dist: google-generativeai
+Requires-Dist: mlflow
+Requires-Dist: wandb
+Requires-Dist: pandas
+Requires-Dist: python-dotenv

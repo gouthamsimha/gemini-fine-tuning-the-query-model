@@ -1,0 +1,78 @@
+[
+    {
+        "text_input": "compare kohli and rohit batting stats in successful chases",
+        "output": "SELECT p.id as player_id, p.name, COUNT(DISTINCT m.id) as matches, SUM(dbs.runs_scored) as total_runs, ROUND(AVG(dbs.runs_scored), 2) as average, COUNT(CASE WHEN dbs.runs_scored >= 50 AND dbs.runs_scored < 100 THEN 1 END) as fifties, COUNT(CASE WHEN dbs.runs_scored >= 100 THEN 1 END) as hundreds, ROUND(SUM(dbs.runs_scored) * 100.0 / NULLIF(SUM(dbs.balls_faced), 0), 2) as strike_rate, COUNT(CASE WHEN dbs.dismissal_type IS NULL THEN 1 END) as not_outs FROM ipl.detailed_batting_scorecard dbs JOIN ipl.matches m ON dbs.match_id = m.id JOIN ipl.players p ON dbs.batter_id = p.id WHERE p.name IN ('Virat Kohli', 'Rohit Sharma') AND dbs.innings_number = 2 AND m.winner_id = dbs.team_id GROUP BY p.id, p.name ORDER BY total_runs DESC"
+    },
+    {
+        "text_input": "bumrah vs rabada death overs comparison",
+        "output": "SELECT player_id as bowler_id, player_name as bowler, SUM(matches_played) as matches, SUM(death_overs_wickets) as wickets, SUM(runs_conceded) as runs_conceded, SUM(dot_balls) as dot_balls, ROUND(AVG(death_overs_economy), 2) as economy FROM ipl.bowling_aggregate WHERE player_name ILIKE '%bumrah%' OR player_name ILIKE '%rabada%' GROUP BY player_id, player_name ORDER BY economy"
+    },
+    {
+        "text_input": "dhoni vs abd powerplay strike rate by season",
+        "output": "SELECT s.year, p.name as player, ROUND(SUM(d.runs_batter) * 100.0 / NULLIF(COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END), 0), 2) as powerplay_sr FROM ipl.deliveries d JOIN ipl.overs o ON d.over_id = o.id JOIN ipl.innings i ON o.innings_id = i.id JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.seasons s ON m.season_id = s.id JOIN ipl.players p ON d.batter_id = p.id WHERE p.name IN ('MS Dhoni', 'AB de Villiers') AND d.phase = 'powerplay' GROUP BY s.year, p.name ORDER BY s.year, powerplay_sr DESC"
+    },
+    {
+        "text_input": "gayle vs warner boundary percentage comparison",
+        "output": "SELECT player_id, player_name as name, matches_played as matches, total_runs, (fours * 4 + sixes * 6) as runs_in_boundaries, ROUND((fours * 4 + sixes * 6) * 100.0 / NULLIF(total_runs, 0), 2) as boundary_percentage, fours, sixes FROM ipl.batting_aggregate WHERE player_name LIKE '%Gayle%' OR player_name LIKE '%Warner%' GROUP BY player_id, player_name, matches_played, total_runs, fours, sixes ORDER BY boundary_percentage DESC"
+    },
+    {
+        "text_input": "ashwin vs jadeja against left handers",
+        "output": "SELECT p.id as bowler_id, p.name as bowler, COUNT(DISTINCT pb.id) as batsmen_faced, COUNT(CASE WHEN d.is_wicket = true THEN 1 END) as wickets, SUM(d.runs_total) as runs_conceded, ROUND(SUM(d.runs_total) * 6.0 / NULLIF(COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END), 0), 2) as economy FROM ipl.deliveries d JOIN ipl.overs o ON d.over_id = o.id JOIN ipl.players p ON o.bowler_id = p.id JOIN ipl.players pb ON d.batter_id = pb.id WHERE p.name IN ('R Ashwin', 'Ravindra Jadeja') AND pb.batting_style LIKE 'Left%' GROUP BY p.id, p.name ORDER BY economy"
+    },
+    {
+        "text_input": "russell vs pollard death overs strike rate",
+        "output": "SELECT player_id, player_name as name, COUNT(DISTINCT season_id) as seasons, SUM(matches_played) as matches, ROUND(AVG(death_over_strike_rate), 2) as avg_death_overs_strike_rate, SUM(sixes) as total_sixes FROM ipl.batting_aggregate WHERE player_name LIKE '%Russell%' OR player_name LIKE '%Pollard%' GROUP BY player_id, player_name ORDER BY avg_death_overs_strike_rate DESC"
+    },
+    {
+        "text_input": "maxwell vs de villiers against spin",
+        "output": "SELECT p.id as batter_id, p.name as batter, COUNT(DISTINCT pb.id) as spinners_faced, SUM(d.runs_batter) as runs, COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END) as balls, ROUND(SUM(d.runs_batter) * 100.0 / NULLIF(COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END), 0), 2) as strike_rate, COUNT(CASE WHEN d.is_wicket = true THEN 1 END) as dismissals FROM ipl.deliveries d JOIN ipl.overs o ON d.over_id = o.id JOIN ipl.players p ON d.batter_id = p.id JOIN ipl.players pb ON o.bowler_id = pb.id WHERE p.name IN ('Glenn Maxwell', 'AB de Villiers') AND pb.bowling_style LIKE '%spin%' GROUP BY p.id, p.name ORDER BY strike_rate DESC"
+    },
+    {
+        "text_input": "dhoni vs karthik wicketkeeping comparison",
+        "output": "SELECT p.id as keeper_id, p.name as keeper, COUNT(DISTINCT m.id) as matches, COUNT(CASE WHEN w.kind = 'caught' THEN 1 END) as catches, COUNT(CASE WHEN w.kind = 'stumped' THEN 1 END) as stumpings, COUNT(CASE WHEN w.kind IN ('caught', 'stumped') THEN 1 END) as total_dismissals FROM ipl.wickets w JOIN ipl.deliveries d ON w.delivery_id = d.id JOIN ipl.overs o ON d.over_id = o.id JOIN ipl.innings i ON o.innings_id = i.id JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.players p ON w.fielder1_id = p.id WHERE p.name IN ('MS Dhoni', 'Dinesh Karthik') AND w.kind IN ('caught', 'stumped') GROUP BY p.id, p.name ORDER BY total_dismissals DESC"
+    },
+    {
+        "text_input": "rohit vs warner powerplay vs death overs comparison",
+        "output": "SELECT p.id as player_id, p.name, d.phase, COUNT(DISTINCT m.id) as matches, SUM(d.runs_batter) as runs, COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END) as balls, ROUND(SUM(d.runs_batter) * 100.0 / NULLIF(COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END), 0), 2) as strike_rate FROM ipl.deliveries d JOIN ipl.overs o ON d.over_id = o.id JOIN ipl.innings i ON o.innings_id = i.id JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.players p ON d.batter_id = p.id WHERE p.name IN ('Rohit Sharma', 'David Warner') AND d.phase IN ('powerplay', 'death_overs') GROUP BY p.id, p.name, d.phase ORDER BY p.name, d.phase"
+    },
+    {
+        "text_input": "bumrah vs kohli head to head stats",
+        "output": "SELECT p_bat.name as batter, p_bowl.name as bowler, COUNT(DISTINCT m.id) as matches_faced, COUNT(CASE WHEN d.is_wicket = true THEN 1 END) as dismissals, SUM(d.runs_batter) as runs_scored, COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END) as balls_faced, ROUND(SUM(d.runs_batter) * 100.0 / NULLIF(COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END), 0), 2) as strike_rate, COUNT(CASE WHEN d.runs_total = 0 AND d.is_legal_ball = true THEN 1 END) as dot_balls FROM ipl.deliveries d JOIN ipl.overs o ON d.over_id = o.id JOIN ipl.innings i ON o.innings_id = i.id JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.players p_bat ON d.batter_id = p_bat.id JOIN ipl.players p_bowl ON o.bowler_id = p_bowl.id WHERE p_bat.name LIKE '%Kohli%' AND p_bowl.name LIKE '%Bumrah%' GROUP BY p_bat.name, p_bowl.name"
+    },
+    {
+        "text_input": "rashid khan vs left handed batsmen in powerplay",
+        "output": "SELECT p_bowl.id as bowler_id, p_bowl.name as bowler, COUNT(DISTINCT p_bat.id) as batsmen_faced, COUNT(DISTINCT m.id) as matches, COUNT(CASE WHEN d.is_wicket = true THEN 1 END) as wickets, SUM(d.runs_total) as runs_conceded, COUNT(CASE WHEN d.runs_total = 0 AND d.is_legal_ball = true THEN 1 END) as dot_balls, ROUND(SUM(d.runs_total) * 6.0 / NULLIF(COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END), 0), 2) as economy FROM ipl.deliveries d JOIN ipl.overs o ON d.over_id = o.id JOIN ipl.innings i ON o.innings_id = i.id JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.players p_bowl ON o.bowler_id = p_bowl.id JOIN ipl.players p_bat ON d.batter_id = p_bat.id WHERE p_bowl.name LIKE '%Rashid%Khan%' AND p_bat.batting_style LIKE 'Left%' AND d.phase = 'powerplay' GROUP BY p_bowl.id, p_bowl.name"
+    },
+    {
+        "text_input": "dhoni vs malinga in death overs",
+        "output": "SELECT p_bat.name as batter, p_bowl.name as bowler, COUNT(DISTINCT m.id) as matches, SUM(d.runs_batter) as runs_scored, COUNT(CASE WHEN d.is_wicket = true THEN 1 END) as dismissals, COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END) as balls_faced, COUNT(CASE WHEN d.runs_batter = 6 THEN 1 END) as sixes, COUNT(CASE WHEN d.runs_batter = 4 THEN 1 END) as fours, ROUND(SUM(d.runs_batter) * 100.0 / NULLIF(COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END), 0), 2) as strike_rate FROM ipl.deliveries d JOIN ipl.overs o ON d.over_id = o.id JOIN ipl.innings i ON o.innings_id = i.id JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.players p_bat ON d.batter_id = p_bat.id JOIN ipl.players p_bowl ON o.bowler_id = p_bowl.id WHERE p_bat.name LIKE '%Dhoni%' AND p_bowl.name LIKE '%Malinga%' AND d.phase = 'death_overs' GROUP BY p_bat.name, p_bowl.name"
+    },
+    {
+        "text_input": "maxwell vs ashwin powerplay battles",
+        "output": "SELECT s.year, p_bat.name as batter, p_bowl.name as bowler, COUNT(DISTINCT m.id) as matches, SUM(d.runs_batter) as runs_scored, COUNT(CASE WHEN d.is_wicket = true THEN 1 END) as dismissals, COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END) as balls_faced, ROUND(SUM(d.runs_batter) * 100.0 / NULLIF(COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END), 0), 2) as strike_rate FROM ipl.deliveries d JOIN ipl.overs o ON d.over_id = o.id JOIN ipl.innings i ON o.innings_id = i.id JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.seasons s ON m.season_id = s.id JOIN ipl.players p_bat ON d.batter_id = p_bat.id JOIN ipl.players p_bowl ON o.bowler_id = p_bowl.id WHERE p_bat.name LIKE '%Maxwell%' AND p_bowl.name LIKE '%Ashwin%' AND d.phase = 'powerplay' GROUP BY s.year, p_bat.name, p_bowl.name ORDER BY s.year"
+    },
+    {
+        "text_input": "warner vs bumrah by match phase",
+        "output": "SELECT d.phase, p_bat.name as batter, p_bowl.name as bowler, COUNT(DISTINCT m.id) as matches, SUM(d.runs_batter) as runs_scored, COUNT(CASE WHEN d.is_wicket = true THEN 1 END) as dismissals, COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END) as balls_faced, ROUND(SUM(d.runs_batter) * 100.0 / NULLIF(COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END), 0), 2) as strike_rate FROM ipl.deliveries d JOIN ipl.overs o ON d.over_id = o.id JOIN ipl.innings i ON o.innings_id = i.id JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.players p_bat ON d.batter_id = p_bat.id JOIN ipl.players p_bowl ON o.bowler_id = p_bowl.id WHERE p_bat.name LIKE '%Warner%' AND p_bowl.name LIKE '%Bumrah%' GROUP BY d.phase, p_bat.name, p_bowl.name ORDER BY d.phase"
+    },
+    {
+        "text_input": "csk vs mi head to head powerplay comparison",
+        "output": "SELECT t.short_name as team, COUNT(DISTINCT m.id) as matches, ROUND(AVG(p.runs), 2) as avg_powerplay_score, ROUND(AVG(p.wickets), 2) as avg_wickets_lost, COUNT(CASE WHEN m.winner_id = t.id THEN 1 END) as wins FROM ipl.phases p JOIN ipl.innings i ON p.innings_id = i.id JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.teams t ON i.batting_team_id = t.id WHERE t.short_name IN ('CSK', 'MI') AND p.phase_type = 'powerplay' AND m.team1_id IN (SELECT id FROM ipl.teams WHERE short_name IN ('CSK', 'MI')) AND m.team2_id IN (SELECT id FROM ipl.teams WHERE short_name IN ('CSK', 'MI')) GROUP BY t.short_name"
+    },
+    {
+        "text_input": "rcb vs csk death overs economy comparison",
+        "output": "SELECT t.short_name as bowling_team, COUNT(DISTINCT m.id) as matches, ROUND(SUM(d.runs_total) * 6.0 / NULLIF(COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END), 0), 2) as death_overs_economy, COUNT(CASE WHEN d.is_wicket = true THEN 1 END) as wickets FROM ipl.deliveries d JOIN ipl.overs o ON d.over_id = o.id JOIN ipl.innings i ON o.innings_id = i.id JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.teams t ON i.bowling_team_id = t.id WHERE t.short_name IN ('RCB', 'CSK') AND d.phase = 'death_overs' AND m.team1_id IN (SELECT id FROM ipl.teams WHERE short_name IN ('RCB', 'CSK')) AND m.team2_id IN (SELECT id FROM ipl.teams WHERE short_name IN ('RCB', 'CSK')) GROUP BY t.short_name"
+    },
+    {
+        "text_input": "mi vs kkr successful chase percentage",
+        "output": "SELECT t.short_name as team, COUNT(DISTINCT m.id) as total_chases, COUNT(CASE WHEN m.winner_id = t.id THEN 1 END) as successful_chases, ROUND(COUNT(CASE WHEN m.winner_id = t.id THEN 1 END) * 100.0 / NULLIF(COUNT(DISTINCT m.id), 0), 2) as chase_success_rate FROM ipl.innings i JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.teams t ON i.batting_team_id = t.id WHERE t.short_name IN ('MI', 'KKR') AND i.innings_number = 2 AND m.team1_id IN (SELECT id FROM ipl.teams WHERE short_name IN ('MI', 'KKR')) AND m.team2_id IN (SELECT id FROM ipl.teams WHERE short_name IN ('MI', 'KKR')) GROUP BY t.short_name"
+    },
+    {
+        "text_input": "dc vs srh boundary percentage comparison",
+        "output": "SELECT t.short_name as team, COUNT(DISTINCT m.id) as matches, SUM(dbs.fours) as fours, SUM(dbs.sixes) as sixes, ROUND(SUM(dbs.fours * 4 + dbs.sixes * 6) * 100.0 / NULLIF(SUM(dbs.runs_scored), 0), 2) as boundary_percentage FROM ipl.detailed_batting_scorecard dbs JOIN ipl.matches m ON dbs.match_id = m.id JOIN ipl.teams t ON dbs.team_id = t.id WHERE t.short_name IN ('DC', 'SRH') AND m.team1_id IN (SELECT id FROM ipl.teams WHERE short_name IN ('DC', 'SRH')) AND m.team2_id IN (SELECT id FROM ipl.teams WHERE short_name IN ('DC', 'SRH')) GROUP BY t.short_name"
+    },
+    {
+        "text_input": "rr vs pbks knockout matches comparison",
+        "output": "SELECT t.short_name as team, COUNT(DISTINCT m.id) as matches, ROUND(AVG(i.total_score), 2) as avg_score, COUNT(CASE WHEN m.winner_id = t.id THEN 1 END) as wins, ROUND(AVG(i.wickets), 2) as avg_wickets_lost FROM ipl.innings i JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.teams t ON i.batting_team_id = t.id WHERE t.short_name IN ('RR', 'PBKS') AND m.is_playoff = true GROUP BY t.short_name"
+    }
+]

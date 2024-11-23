@@ -1,0 +1,82 @@
+[
+    {
+        "text_input": "average powerplay score by team",
+        "output": "SELECT t.id as team_id, t.short_name as team, AVG(p.runs) as avg_powerplay_score, COUNT(*) as innings_count FROM ipl.innings i JOIN ipl.teams t ON i.batting_team_id = t.id JOIN ipl.phases p ON i.id = p.innings_id WHERE p.phase_type = 'powerplay' GROUP BY t.id, t.short_name ORDER BY avg_powerplay_score DESC"
+    },
+    {
+        "text_input": "season wise average first innings scores",
+        "output": "SELECT s.id as season_id, s.year, ROUND(AVG(i.total_score), 2) as avg_first_innings_score FROM ipl.innings i JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.seasons s ON m.season_id = s.id WHERE i.innings_number = 1 GROUP BY s.id, s.year ORDER BY s.year"
+    },
+    {
+        "text_input": "rohit sharma year wise strike rate",
+        "output": "SELECT s.id as season_id, s.year, t.id as team_id, t.short_name as team, ROUND(SUM(dbs.runs_scored) * 100.0 / NULLIF(SUM(dbs.balls_faced), 0), 2) as strike_rate FROM ipl.detailed_batting_scorecard dbs JOIN ipl.matches m ON dbs.match_id = m.id JOIN ipl.seasons s ON m.season_id = s.id JOIN ipl.players p ON dbs.batter_id = p.id JOIN ipl.teams t ON dbs.team_id = t.id WHERE p.name LIKE '%Rohit%Sharma%' GROUP BY s.id, s.year, t.id, t.short_name ORDER BY s.year"
+    },
+    {
+        "text_input": "average runs in each phase of innings",
+        "output": "SELECT p.phase_type, ROUND(AVG(p.runs), 2) as avg_runs, ROUND(AVG(p.wickets), 2) as avg_wickets FROM ipl.phases p GROUP BY p.phase_type ORDER BY p.phase_type"
+    },
+    {
+        "text_input": "team wise average death over economy",
+        "output": "SELECT t.id as team_id, t.short_name as team, ROUND(SUM(d.runs_total) * 6.0 / NULLIF(COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END), 0), 2) as death_economy FROM ipl.deliveries d JOIN ipl.overs o ON d.over_id = o.id JOIN ipl.innings i ON o.innings_id = i.id JOIN ipl.teams t ON i.bowling_team_id = t.id WHERE d.phase = 'death_overs' GROUP BY t.id, t.short_name ORDER BY death_economy"
+    },
+    {
+        "text_input": "venue wise average first innings vs second innings scores",
+        "output": "SELECT v.id as venue_id, v.name, ROUND(AVG(CASE WHEN i.innings_number = 1 THEN i.total_score END), 2) as avg_first_innings, ROUND(AVG(CASE WHEN i.innings_number = 2 THEN i.total_score END), 2) as avg_second_innings FROM ipl.venues v JOIN ipl.matches m ON v.id = m.venue_id JOIN ipl.innings i ON m.id = i.match_id GROUP BY v.id, v.name HAVING COUNT(*) >= 10 ORDER BY avg_first_innings DESC"
+    },
+    {
+        "text_input": "ms dhoni year wise average in successful chases",
+        "output": "SELECT s.id as season_id, s.year, COUNT(DISTINCT m.id) as matches, ROUND(AVG(dbs.runs_scored), 2) as average FROM ipl.detailed_batting_scorecard dbs JOIN ipl.matches m ON dbs.match_id = m.id JOIN ipl.seasons s ON m.season_id = s.id JOIN ipl.players p ON dbs.batter_id = p.id WHERE p.name LIKE '%Dhoni%' AND dbs.innings_number = 2 AND m.winner_id = dbs.team_id GROUP BY s.id, s.year ORDER BY s.year"
+    },
+    {
+        "text_input": "batting position wise average and strike rate",
+        "output": "SELECT batting_position, COUNT(DISTINCT player_id) as players, ROUND(AVG(runs_scored), 2) as avg_score, ROUND(SUM(runs_scored) * 100.0 / NULLIF(SUM(balls_faced), 0), 2) as strike_rate FROM ipl.detailed_batting_scorecard WHERE batting_position BETWEEN 1 AND 7 GROUP BY batting_position ORDER BY batting_position"
+    },
+    {
+        "text_input": "left vs right handed bowlers economy rate comparison",
+        "output": "SELECT p.bowling_style, COUNT(DISTINCT p.id) as bowlers, ROUND(SUM(d.runs_total) * 6.0 / NULLIF(COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END), 0), 2) as economy FROM ipl.deliveries d JOIN ipl.overs o ON d.over_id = o.id JOIN ipl.players p ON o.bowler_id = p.id WHERE p.bowling_style LIKE '%Left%' OR p.bowling_style LIKE '%Right%' GROUP BY p.bowling_style ORDER BY economy"
+    },
+    {
+        "text_input": "rcb powerplay wickets by season",
+        "output": "SELECT s.id as season_id, s.year, COUNT(CASE WHEN d.is_wicket = true THEN 1 END) as powerplay_wickets FROM ipl.deliveries d JOIN ipl.overs o ON d.over_id = o.id JOIN ipl.innings i ON o.innings_id = i.id JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.seasons s ON m.season_id = s.id JOIN ipl.teams t ON i.bowling_team_id = t.id WHERE t.short_name = 'RCB' AND d.phase = 'powerplay' GROUP BY s.id, s.year ORDER BY s.year"
+    },
+    {
+        "text_input": "average runs by over number",
+        "output": "SELECT o.over_number, ROUND(AVG(d.runs_total), 2) as avg_runs, COUNT(CASE WHEN d.is_wicket = true THEN 1 END) as total_wickets FROM ipl.deliveries d JOIN ipl.overs o ON d.over_id = o.id GROUP BY o.over_number ORDER BY o.over_number"
+    },
+    {
+        "text_input": "team wise average powerplay wickets per match",
+        "output": "SELECT t.id as team_id, t.short_name as team, ROUND(COUNT(CASE WHEN d.is_wicket = true THEN 1 END)::decimal / COUNT(DISTINCT m.id), 2) as avg_powerplay_wickets FROM ipl.deliveries d JOIN ipl.overs o ON d.over_id = o.id JOIN ipl.innings i ON o.innings_id = i.id JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.teams t ON i.bowling_team_id = t.id WHERE d.phase = 'powerplay' GROUP BY t.id, t.short_name ORDER BY avg_powerplay_wickets DESC"
+    },
+    {
+        "text_input": "virat kohli average by opponent",
+        "output": "SELECT t.id as opponent_id, t.short_name as opponent, COUNT(DISTINCT m.id) as matches, ROUND(AVG(dbs.runs_scored), 2) as average FROM ipl.detailed_batting_scorecard dbs JOIN ipl.matches m ON dbs.match_id = m.id JOIN ipl.players p ON dbs.batter_id = p.id JOIN ipl.teams t ON (m.team1_id = t.id OR m.team2_id = t.id) AND dbs.team_id != t.id WHERE p.name LIKE '%Kohli%' GROUP BY t.id, t.short_name ORDER BY average DESC"
+    },
+    {
+        "text_input": "season wise average match totals",
+        "output": "SELECT s.id as season_id, s.year, ROUND(AVG(i.total_score), 2) as avg_total FROM ipl.innings i JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.seasons s ON m.season_id = s.id GROUP BY s.id, s.year ORDER BY s.year"
+    },
+    {
+        "text_input": "bumrah death overs economy by season",
+        "output": "SELECT s.id as season_id, s.year, ROUND(SUM(d.runs_total) * 6.0 / NULLIF(COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END), 0), 2) as death_economy FROM ipl.deliveries d JOIN ipl.overs o ON d.over_id = o.id JOIN ipl.innings i ON o.innings_id = i.id JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.seasons s ON m.season_id = s.id JOIN ipl.players p ON o.bowler_id = p.id WHERE p.name LIKE '%Bumrah%' AND d.phase = 'death_overs' GROUP BY s.id, s.year ORDER BY s.year"
+    },
+    {
+        "text_input": "average partnership runs by wicket number",
+        "output": "SELECT dbs.wicket_number, ROUND(AVG(dbs.partnership_runs), 2) as avg_partnership, ROUND(AVG(dbs.partnership_balls), 2) as avg_balls, COUNT(DISTINCT m.id) as total_partnerships FROM ipl.detailed_batting_scorecard dbs JOIN ipl.matches m ON dbs.match_id = m.id WHERE dbs.wicket_number BETWEEN 1 AND 10 GROUP BY dbs.wicket_number ORDER BY dbs.wicket_number"
+    },
+    {
+        "text_input": "suryakumar yadav boundary percentage by season",
+        "output": "SELECT s.id as season_id, s.year, ROUND(SUM(dbs.fours * 4 + dbs.sixes * 6) * 100.0 / NULLIF(SUM(dbs.runs_scored), 0), 2) as boundary_percentage FROM ipl.detailed_batting_scorecard dbs JOIN ipl.matches m ON dbs.match_id = m.id JOIN ipl.seasons s ON m.season_id = s.id JOIN ipl.players p ON dbs.batter_id = p.id WHERE p.name LIKE '%Suryakumar%Yadav%' GROUP BY s.id, s.year ORDER BY s.year"
+    },
+    {
+        "text_input": "average runs in last 5 overs by venue",
+        "output": "SELECT v.id as venue_id, v.name, ROUND(AVG(d.runs_total), 2) as avg_runs_per_over FROM ipl.deliveries d JOIN ipl.overs o ON d.over_id = o.id JOIN ipl.innings i ON o.innings_id = i.id JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.venues v ON m.venue_id = v.id WHERE o.over_number >= 16 GROUP BY v.id, v.name HAVING COUNT(DISTINCT m.id) >= 10 ORDER BY avg_runs_per_over DESC"
+    },
+    {
+        "text_input": "spinners vs pacers wickets by phase",
+        "output": "SELECT d.phase, p.bowling_style, COUNT(CASE WHEN d.is_wicket = true THEN 1 END) as wickets, COUNT(DISTINCT o.bowler_id) as bowlers FROM ipl.deliveries d JOIN ipl.overs o ON d.over_id = o.id JOIN ipl.players p ON o.bowler_id = p.id WHERE p.bowling_style IS NOT NULL GROUP BY d.phase, p.bowling_style ORDER BY d.phase, wickets DESC"
+    },
+    {
+        "text_input": "team wise super over win percentage",
+        "output": "SELECT s.id as season_id, s.year, COUNT(DISTINCT m.id) as matches_played, SUM(dbs.runs_scored) as total_runs, SUM(dbs.fours) as fours, SUM(dbs.sixes) as sixes, ROUND(((SUM(dbs.fours) * 4 + SUM(dbs.sixes) * 6) * 100.0) / NULLIF(SUM(dbs.runs_scored), 0), 2) as boundary_percentage FROM ipl.detailed_batting_scorecard dbs JOIN ipl.matches m ON dbs.match_id = m.id JOIN ipl.seasons s ON m.season_id = s.id JOIN ipl.players p ON dbs.batter_id = p.id WHERE p.name LIKE '%Surya%' OR p.name LIKE '%Kumar%Yadav%' GROUP BY s.id, s.year ORDER BY s.year"
+    }
+]

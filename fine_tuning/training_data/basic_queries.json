@@ -1,0 +1,82 @@
+[
+    {
+        "text_input": "most sixes in an ipl season",
+        "output": "SELECT p.id as player_id, p.name as player_name, t.id as team_id, t.full_name as team_name, t.short_name as team_short_name, s.id as season_id, s.year as season_year, ba.sixes, ba.matches_played, ba.innings_played, ba.total_runs, ba.balls_faced FROM ipl.batting_aggregate ba JOIN ipl.players p ON ba.player_id = p.id JOIN ipl.teams t ON ba.team_id = t.id JOIN ipl.seasons s ON ba.season_id = s.id ORDER BY ba.sixes DESC LIMIT 1"
+    },
+    {
+        "text_input": "kohli centuries all seasons",
+        "output": "SELECT p.id as player_id, p.name as player_name, t.id as team_id, t.full_name as team_name, s.id as season_id, s.year as season_year, ba.hundreds, ba.total_runs, ba.matches_played, ba.innings_played, ba.fifties, ba.strike_rate FROM ipl.batting_aggregate ba JOIN ipl.players p ON ba.player_id = p.id JOIN ipl.teams t ON ba.team_id = t.id JOIN ipl.seasons s ON ba.season_id = s.id WHERE p.name LIKE '%Kohli%' ORDER BY s.year"
+    },
+    {
+        "text_input": "purple cap winners list",
+        "output": "SELECT p.id as player_id, p.name as player_name, t.id as team_id, t.full_name as team_name, t.short_name as team_short_name, s.id as season_id, s.year as season_year, ba1.wickets, ba1.matches_played, ba1.economy, ba1.average, ba1.strike_rate FROM ipl.bowling_aggregate ba1 JOIN ipl.players p ON ba1.player_id = p.id JOIN ipl.teams t ON ba1.team_id = t.id JOIN ipl.seasons s ON ba1.season_id = s.id WHERE ba1.wickets = (SELECT MAX(wickets) FROM ipl.bowling_aggregate ba2 WHERE ba1.season_id = ba2.season_id) ORDER BY s.year DESC"
+    },
+    {
+        "text_input": "highest team totals ever",
+        "output": "SELECT t.id as team_id, t.full_name as team_name, t.short_name as team_short_name, s.id as season_id, s.year as season_year, m.id as match_id, v.id as venue_id, v.name as venue_name, i.total_score, i.wickets, i.overs, i.balls FROM ipl.innings i JOIN ipl.teams t ON i.batting_team_id = t.id JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.seasons s ON m.season_id = s.id JOIN ipl.venues v ON m.venue_id = v.id ORDER BY i.total_score DESC LIMIT 10"
+    },
+    {
+        "text_input": "best economy rate min 50 wickets all time",
+        "output": "SELECT p.id as player_id, p.name as player_name, cs.total_wickets, ROUND(cs.career_economy::numeric, 2) as economy, cs.total_matches, cs.total_balls_bowled, cs.total_runs_conceded FROM (SELECT player_id, COUNT(*) as total_matches, SUM(wickets) as total_wickets, SUM(runs_conceded) as total_runs_conceded, SUM(balls_bowled) as total_balls_bowled, SUM(runs_conceded) * 6.0 / NULLIF(SUM(balls_bowled), 0) as career_economy FROM ipl.bowling_aggregate GROUP BY player_id HAVING SUM(wickets) >= 50) cs JOIN ipl.players p ON cs.player_id = p.id ORDER BY cs.career_economy ASC LIMIT 1"
+    },
+    {
+        "text_input": "most catches in ipl history",
+        "output": "SELECT p.id as player_id, p.name as player_name, COUNT(*) as total_catches, COUNT(DISTINCT m.id) as matches_with_catches, COUNT(DISTINCT s.id) as seasons_played FROM ipl.wickets w JOIN ipl.players p ON w.fielder1_id = p.id JOIN ipl.deliveries d ON w.delivery_id = d.id JOIN ipl.overs o ON d.over_id = o.id JOIN ipl.innings i ON o.innings_id = i.id JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.seasons s ON m.season_id = s.id WHERE w.kind = 'caught' GROUP BY p.id, p.name ORDER BY total_catches DESC LIMIT 10"
+    },
+    {
+        "text_input": "gayle highest scores",
+        "output": "SELECT p.id as player_id, p.name as player_name, m.id as match_id, m.date, t1.id as team1_id, t1.short_name as team1, t2.id as team2_id, t2.short_name as team2, s.id as season_id, s.year, dbs.runs_scored, dbs.balls_faced, dbs.fours, dbs.sixes, dbs.strike_rate FROM ipl.detailed_batting_scorecard dbs JOIN ipl.matches m ON dbs.match_id = m.id JOIN ipl.teams t1 ON m.team1_id = t1.id JOIN ipl.teams t2 ON m.team2_id = t2.id JOIN ipl.seasons s ON m.season_id = s.id JOIN ipl.players p ON dbs.batter_id = p.id WHERE p.name LIKE '%Gayle%' ORDER BY dbs.runs_scored DESC LIMIT 5"
+    },
+    {
+        "text_input": "which ground highest average score",
+        "output": "SELECT v.id as venue_id, v.name as venue_name, v.city, AVG(i.total_score) as avg_score, COUNT(*) as matches_played, MIN(i.total_score) as lowest_score, MAX(i.total_score) as highest_score FROM ipl.venues v JOIN ipl.matches m ON v.id = m.venue_id JOIN ipl.innings i ON m.id = i.match_id GROUP BY v.id, v.name, v.city HAVING COUNT(*) >= 10 ORDER BY avg_score DESC LIMIT 1"
+    },
+    {
+        "text_input": "most successful captain all time",
+        "output": "SELECT p.id as player_id, p.name as player_name, t.id as team_id, t.full_name as team_name, COUNT(*) as total_wins, COUNT(DISTINCT s.id) as seasons_captained, COUNT(DISTINCT m.id) as matches_captained FROM ipl.matches m JOIN ipl.player_match_roles pmr ON m.id = pmr.match_id JOIN ipl.players p ON pmr.player_id = p.id JOIN ipl.teams t ON pmr.team_id = t.id JOIN ipl.seasons s ON m.season_id = s.id WHERE pmr.is_captain = true AND m.winner_id = pmr.team_id GROUP BY p.id, p.name, t.id, t.full_name ORDER BY total_wins DESC LIMIT 1"
+    },
+    {
+        "text_input": "dhoni vs rcb career stats",
+        "output": "SELECT p.id as player_id, p.name as player_name, s.id as season_id, CASE WHEN s.year IS NULL THEN 'Career Total' ELSE s.year::TEXT END as season, t.id as opponent_id, t.short_name as opponent_name, COUNT(DISTINCT m.id) as matches_played, SUM(dbs.runs_scored) as total_runs, SUM(dbs.balls_faced) as balls_faced, ROUND(SUM(dbs.runs_scored) * 100.0 / NULLIF(SUM(dbs.balls_faced), 0), 2) as strike_rate, COUNT(CASE WHEN dbs.runs_scored >= 50 AND dbs.runs_scored < 100 THEN 1 END) as fifties, SUM(dbs.fours) as fours, SUM(dbs.sixes) as sixes FROM ipl.detailed_batting_scorecard dbs JOIN ipl.matches m ON dbs.match_id = m.id JOIN ipl.seasons s ON m.season_id = s.id JOIN ipl.players p ON dbs.batter_id = p.id JOIN ipl.teams t ON (m.team1_id = t.id OR m.team2_id = t.id) AND dbs.team_id != t.id WHERE p.name LIKE '%Dhoni%' AND t.short_name ILIKE '%RCB%' GROUP BY ROLLUP(s.id, s.year), p.id, p.name, t.id, t.short_name ORDER BY CASE WHEN s.year IS NULL THEN 9999 ELSE s.year END"
+    },
+    {
+        "text_input": "fastest fifties in ipl history",
+        "output": "SELECT DISTINCT player_id, batter_name, team_id, team, match_id, season_id, year, running_score as runs_scored, balls_faced, ROUND((running_score::float * 100 / NULLIF(balls_faced, 0))::numeric, 2) as strike_rate FROM (SELECT p.id as player_id, p.name as batter_name, t.id as team_id, t.short_name as team, m.id as match_id, s.id as season_id, s.year, SUM(d.runs_batter) OVER (PARTITION BY m.id, d.batter_id ORDER BY o.over_number, d.ball_number) as running_score, COUNT(CASE WHEN d.is_legal_ball THEN 1 END) OVER (PARTITION BY m.id, d.batter_id ORDER BY o.over_number, d.ball_number) as balls_faced FROM ipl.matches m JOIN ipl.innings i ON m.id = i.match_id JOIN ipl.overs o ON i.id = o.innings_id JOIN ipl.deliveries d ON o.id = d.over_id JOIN ipl.players p ON d.batter_id = p.id JOIN ipl.teams t ON i.batting_team_id = t.id JOIN ipl.seasons s ON m.season_id = s.id) running_total WHERE running_score >= 50 AND balls_faced < 20 ORDER BY balls_faced ASC LIMIT 10"
+    },
+    {
+        "text_input": "most dot balls in a season",
+        "output": "SELECT p.id as player_id, p.name as player_name, t.id as team_id, t.full_name as team_name, s.id as season_id, s.year as season_year, ba.dot_balls, ba.balls_bowled, ba.overs_bowled, ba.wickets, ba.economy FROM ipl.bowling_aggregate ba JOIN ipl.players p ON ba.player_id = p.id JOIN ipl.teams t ON ba.team_id = t.id JOIN ipl.seasons s ON ba.season_id = s.id ORDER BY ba.dot_balls DESC LIMIT 1"
+    },
+    {
+        "text_input": "teams with most titles",
+        "output": "SELECT t.id as team_id, t.full_name as team_name, t.short_name, COUNT(*) as titles, STRING_AGG(s.year::TEXT, ', ' ORDER BY s.year) as winning_years FROM ipl.points_table pt JOIN ipl.teams t ON pt.team_id = t.id JOIN ipl.seasons s ON pt.season_id = s.id WHERE pt.winner = true GROUP BY t.id, t.full_name, t.short_name ORDER BY titles DESC"
+    },
+    {
+        "text_input": "best bowling figures ever",
+        "output": "SELECT p.id as player_id, p.name as player_name, m.id as match_id, s.id as season_id, s.year, t.id as team_id, t.short_name as team, dbs.wickets, dbs.runs_conceded, dbs.overs_bowled, ROUND((dbs.runs_conceded::float / NULLIF(dbs.overs_bowled::float, 0))::numeric, 2) as economy, dbs.dot_balls FROM ipl.detailed_bowling_scorecard dbs JOIN ipl.matches m ON dbs.match_id = m.id JOIN ipl.players p ON dbs.bowler_id = p.id JOIN ipl.seasons s ON m.season_id = s.id JOIN ipl.teams t ON dbs.team_id = t.id ORDER BY dbs.wickets DESC, dbs.runs_conceded ASC LIMIT 1"
+    },
+    {
+        "text_input": "most successful opening pairs",
+        "output": "SELECT p1.id as player1_id, p1.name as player1_name, p2.id as player2_id, p2.name as player2_name, t.id as team_id, t.short_name as team_name, COUNT(DISTINCT m.id) as matches_together, SUM(d1.runs_total) as partnership_runs, ROUND(SUM(d1.runs_total)::decimal / COUNT(DISTINCT m.id), 2) as avg_partnership FROM ipl.deliveries d1 JOIN ipl.players p1 ON d1.batter_id = p1.id JOIN ipl.players p2 ON d1.non_striker_id = p2.id JOIN ipl.overs o ON d1.over_id = o.id JOIN ipl.innings i ON o.innings_id = i.id JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.teams t ON i.batting_team_id = t.id GROUP BY p1.id, p1.name, p2.id, p2.name, t.id, t.short_name HAVING COUNT(DISTINCT m.id) >= 20 ORDER BY partnership_runs DESC LIMIT 5"
+    },
+    {
+        "text_input": "orange cap winners",
+        "output": "SELECT p.id as player_id, p.name as player_name, t.id as team_id, t.full_name as team_name, s.id as season_id, s.year as season_year, ba1.total_runs, ba1.matches_played, ba1.strike_rate, ba1.fifties, ba1.hundreds FROM ipl.batting_aggregate ba1 JOIN ipl.players p ON ba1.player_id = p.id JOIN ipl.teams t ON ba1.team_id = t.id JOIN ipl.seasons s ON ba1.season_id = s.id WHERE ba1.total_runs = (SELECT MAX(total_runs) FROM ipl.batting_aggregate ba2 WHERE ba1.season_id = ba2.season_id) ORDER BY s.year DESC"
+    },
+    {
+        "text_input": "highest powerplay scores ever",
+        "output": "SELECT t.id as team_id, t.short_name as team_name, m.id as match_id, s.id as season_id, s.year, v.id as venue_id, v.name as venue_name, i.total_score, p.runs as powerplay_runs, p.wickets as powerplay_wickets FROM ipl.innings i JOIN ipl.teams t ON i.batting_team_id = t.id JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.seasons s ON m.season_id = s.id JOIN ipl.venues v ON m.venue_id = v.id JOIN ipl.phases p ON i.id = p.innings_id WHERE p.phase_type = 'powerplay' ORDER BY p.runs DESC LIMIT 10"
+    },
+    {
+        "text_input": "most maidens in a season",
+        "output": "SELECT p.id as player_id, p.name as player_name, t.id as team_id, t.full_name as team_name, s.id as season_id, s.year as season_year, ba.maidens, ba.overs_bowled, ba.wickets, ba.economy, ba.average FROM ipl.bowling_aggregate ba JOIN ipl.players p ON ba.player_id = p.id JOIN ipl.teams t ON ba.team_id = t.id JOIN ipl.seasons s ON ba.season_id = s.id ORDER BY ba.maidens DESC LIMIT 1"
+    },
+    {
+        "text_input": "biggest wins by runs",
+        "output": "SELECT m.id as match_id, t.id as winner_id, t.full_name as winner, t2.id as loser_id, t2.full_name as loser, m.win_margin, s.id as season_id, s.year, v.id as venue_id, v.name as venue_name FROM ipl.matches m JOIN ipl.teams t ON m.winner_id = t.id JOIN ipl.teams t2 ON (m.team1_id = t2.id OR m.team2_id = t2.id) AND t2.id != t.id JOIN ipl.seasons s ON m.season_id = s.id JOIN ipl.venues v ON m.venue_id = v.id WHERE m.win_margin_type = 'runs' ORDER BY m.win_margin DESC LIMIT 10"
+    },
+    {
+        "text_input": "most runs in death overs",
+        "output": "SELECT p.id as player_id, p.name as player_name, t.id as team_id, t.full_name as team_name, s.id as season_id, s.year as season_year, ba.death_over_strike_rate, ba.total_runs, ba.matches_played, ba.strike_rate as overall_strike_rate FROM ipl.batting_aggregate ba JOIN ipl.players p ON ba.player_id = p.id JOIN ipl.teams t ON ba.team_id = t.id JOIN ipl.seasons s ON ba.season_id = s.id ORDER BY ba.death_over_strike_rate DESC LIMIT 10"
+    }
+]

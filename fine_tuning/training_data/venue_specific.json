@@ -1,0 +1,73 @@
+[
+
+{
+    "text_input": "which venues have the highest average first innings scores",
+    "output": "SELECT v.id as venue_id, v.name, v.city, COUNT(DISTINCT m.id) as matches_played, ROUND(AVG(i.total_score), 2) as avg_first_innings_score, MAX(i.total_score) as highest_score, MIN(i.total_score) as lowest_score FROM ipl.venues v JOIN ipl.matches m ON v.id = m.venue_id JOIN ipl.innings i ON m.id = i.match_id WHERE i.innings_number = 1 GROUP BY v.id, v.name, v.city HAVING COUNT(DISTINCT m.id) >= 10 ORDER BY avg_first_innings_score DESC"
+},
+{
+    "text_input": "which venues are best for chasing",
+    "output": "WITH chase_stats AS (SELECT v.id, v.name, v.city, COUNT(*) as total_chases, COUNT(CASE WHEN m.winner_id = i2.batting_team_id THEN 1 END) as successful_chases FROM ipl.venues v JOIN ipl.matches m ON v.id = m.venue_id JOIN ipl.innings i2 ON m.id = i2.match_id AND i2.innings_number = 2 GROUP BY v.id, v.name, v.city HAVING COUNT(*) >= 10) SELECT id as venue_id, name, city, total_chases, successful_chases, ROUND((successful_chases::float / total_chases * 100)::numeric, 2) as chase_success_percentage FROM chase_stats ORDER BY chase_success_percentage DESC"
+},
+{
+    "text_input": "which venues have highest powerplay scoring rates",
+    "output": "SELECT v.id as venue_id, v.name, v.city, COUNT(DISTINCT m.id) as matches, ROUND(AVG(p.runs), 2) as avg_powerplay_runs, ROUND(AVG(p.wickets), 2) as avg_powerplay_wickets FROM ipl.venues v JOIN ipl.matches m ON v.id = m.venue_id JOIN ipl.innings i ON m.id = i.match_id JOIN ipl.phases p ON i.id = p.innings_id WHERE p.phase_type = 'powerplay' GROUP BY v.id, v.name, v.city HAVING COUNT(DISTINCT m.id) >= 10 ORDER BY avg_powerplay_runs DESC"
+},
+{
+    "text_input": "which venues are best for spinners",
+    "output": "SELECT v.id as venue_id, v.name, v.city, COUNT(DISTINCT o.bowler_id) as spinners, ROUND(SUM(d.runs_total) * 6.0 / NULLIF(COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END), 0), 2) as economy, ROUND(COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END)::decimal / NULLIF(COUNT(CASE WHEN d.is_wicket = true THEN 1 END), 0), 2) as bowling_strike_rate FROM ipl.venues v JOIN ipl.matches m ON v.id = m.venue_id JOIN ipl.innings i ON m.id = i.match_id JOIN ipl.overs o ON i.id = o.innings_id JOIN ipl.deliveries d ON o.id = d.over_id JOIN ipl.players p ON o.bowler_id = p.id WHERE p.bowling_style LIKE '%spin%' GROUP BY v.id, v.name, v.city HAVING COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END) >= 300 ORDER BY bowling_strike_rate"
+},
+{
+    "text_input": "which venues have most last over finishes",
+    "output": "SELECT v.id as venue_id, v.name, v.city, COUNT(DISTINCT m.id) as last_over_finishes FROM ipl.venues v JOIN ipl.matches m ON v.id = m.venue_id JOIN ipl.innings i ON m.id = i.match_id JOIN ipl.overs o ON i.id = o.innings_id WHERE i.innings_number = 2 AND o.over_number = 19 AND m.winner_id = i.batting_team_id GROUP BY v.id, v.name, v.city ORDER BY last_over_finishes DESC"
+},
+{
+    "text_input": "which venues have highest boundary percentage",
+    "output": "SELECT v.id as venue_id, v.name, v.city, COUNT(DISTINCT m.id) as matches, ROUND((SUM(CASE WHEN d.runs_batter = 4 OR d.runs_batter = 6 THEN 1 ELSE 0 END)::float / NULLIF(COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END), 0) * 100)::numeric, 2) as boundary_percentage FROM ipl.venues v JOIN ipl.matches m ON v.id = m.venue_id JOIN ipl.innings i ON m.id = i.match_id JOIN ipl.overs o ON i.id = o.innings_id JOIN ipl.deliveries d ON o.id = d.over_id GROUP BY v.id, v.name, v.city HAVING COUNT(DISTINCT m.id) >= 10 ORDER BY boundary_percentage DESC"
+},
+{
+    "text_input": "which venues have best death over economy rates",
+    "output": "SELECT v.id as venue_id, v.name, v.city, COUNT(DISTINCT m.id) as matches, ROUND(SUM(d.runs_total) * 6.0 / NULLIF(COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END), 0), 2) as death_economy FROM ipl.venues v JOIN ipl.matches m ON v.id = m.venue_id JOIN ipl.innings i ON m.id = i.match_id JOIN ipl.overs o ON i.id = o.innings_id JOIN ipl.deliveries d ON o.id = d.over_id WHERE d.phase = 'death_overs' GROUP BY v.id, v.name, v.city HAVING COUNT(DISTINCT m.id) >= 10 ORDER BY death_economy"
+},
+{
+    "text_input": "which venues have highest average match totals",
+    "output": "SELECT v.id as venue_id, v.name, v.city, COUNT(DISTINCT m.id) as matches, ROUND(AVG(i.total_score), 2) as avg_innings_score, MAX(i.total_score) as highest_score FROM ipl.venues v JOIN ipl.matches m ON v.id = m.venue_id JOIN ipl.innings i ON m.id = i.match_id GROUP BY v.id, v.name, v.city HAVING COUNT(DISTINCT m.id) >= 10 ORDER BY avg_innings_score DESC"
+},
+{
+    "text_input": "which venues have most century partnerships",
+    "output": "WITH partnership_runs AS (SELECT v.id, v.name, v.city, i.id as innings_id, dbs1.batting_position, SUM(dbs1.runs_scored) FILTER (WHERE dbs1.batting_position > COALESCE(LAG(dbs1.batting_position) OVER (PARTITION BY i.id ORDER BY dbs1.batting_position), 0) AND dbs1.batting_position <= LEAD(dbs1.batting_position, 1, 11) OVER (PARTITION BY i.id ORDER BY dbs1.batting_position)) as partnership_runs FROM ipl.venues v JOIN ipl.matches m ON v.id = m.venue_id JOIN ipl.innings i ON m.id = i.match_id JOIN ipl.detailed_batting_scorecard dbs1 ON i.id = dbs1.innings_id GROUP BY v.id, v.name, v.city, i.id, dbs1.batting_position) SELECT id as venue_id, name, city, COUNT(*) as century_partnerships FROM partnership_runs WHERE partnership_runs >= 100 GROUP BY id, name, city ORDER BY century_partnerships DESC"
+},
+{
+    "text_input": "which venues have highest percentage of matches won by team batting first",
+    "output": "WITH batting_first_stats AS (SELECT v.id, v.name, v.city, COUNT(*) as total_matches, COUNT(CASE WHEN m.winner_id = i1.batting_team_id THEN 1 END) as batting_first_wins FROM ipl.venues v JOIN ipl.matches m ON v.id = m.venue_id JOIN ipl.innings i1 ON m.id = i1.match_id AND i1.innings_number = 1 GROUP BY v.id, v.name, v.city HAVING COUNT(*) >= 10) SELECT id as venue_id, name, city, total_matches, batting_first_wins, ROUND((batting_first_wins::float / total_matches * 100)::numeric, 2) as batting_first_win_percentage FROM batting_first_stats ORDER BY batting_first_win_percentage DESC"
+},
+{
+    "text_input": "which venues have highest average run rate in middle overs",
+    "output": "SELECT v.id as venue_id, v.name, v.city, COUNT(DISTINCT m.id) as matches, ROUND(SUM(d.runs_total) * 6.0 / NULLIF(COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END), 0), 2) as middle_overs_run_rate, ROUND(COUNT(CASE WHEN d.is_wicket = true THEN 1 END)::decimal / COUNT(DISTINCT m.id), 2) as avg_wickets_per_match FROM ipl.venues v JOIN ipl.matches m ON v.id = m.venue_id JOIN ipl.innings i ON m.id = i.match_id JOIN ipl.overs o ON i.id = o.innings_id JOIN ipl.deliveries d ON o.id = d.over_id WHERE d.phase = 'middle_overs' GROUP BY v.id, v.name, v.city HAVING COUNT(DISTINCT m.id) >= 10 ORDER BY middle_overs_run_rate DESC"
+},
+{
+    "text_input": "which venues have most successful defenses of scores under 150",
+    "output": "WITH low_scores AS (SELECT v.id, v.name, v.city, COUNT(*) as total_defenses, COUNT(CASE WHEN m.winner_id = i1.batting_team_id THEN 1 END) as successful_defenses FROM ipl.venues v JOIN ipl.matches m ON v.id = m.venue_id JOIN ipl.innings i1 ON m.id = i1.match_id AND i1.innings_number = 1 WHERE i1.total_score < 150 GROUP BY v.id, v.name, v.city HAVING COUNT(*) >= 5) SELECT id as venue_id, name, city, total_defenses, successful_defenses, ROUND((successful_defenses::float / total_defenses * 100)::numeric, 2) as defense_success_rate FROM low_scores ORDER BY defense_success_rate DESC"
+},
+{
+    "text_input": "which venues have highest percentage of matches with 200+ scores",
+    "output": "SELECT v.id as venue_id, v.name, v.city, COUNT(DISTINCT m.id) as total_matches, COUNT(DISTINCT CASE WHEN i.total_score >= 200 THEN m.id END) as high_scoring_matches, ROUND((COUNT(DISTINCT CASE WHEN i.total_score >= 200 THEN m.id END)::float / COUNT(DISTINCT m.id) * 100)::numeric, 2) as high_score_percentage FROM ipl.venues v JOIN ipl.matches m ON v.id = m.venue_id JOIN ipl.innings i ON m.id = i.match_id GROUP BY v.id, v.name, v.city HAVING COUNT(DISTINCT m.id) >= 10 ORDER BY high_score_percentage DESC"
+},
+{
+    "text_input": "which venues have best records for fast bowlers in powerplay",
+    "output": "SELECT v.id as venue_id, v.name, v.city, COUNT(DISTINCT o.bowler_id) as fast_bowlers, ROUND(SUM(d.runs_total) * 6.0 / NULLIF(COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END), 0), 2) as powerplay_economy, COUNT(CASE WHEN d.is_wicket = true THEN 1 END) as total_wickets FROM ipl.venues v JOIN ipl.matches m ON v.id = m.venue_id JOIN ipl.innings i ON m.id = i.match_id JOIN ipl.overs o ON i.id = o.innings_id JOIN ipl.deliveries d ON o.id = d.over_id JOIN ipl.players p ON o.bowler_id = p.id WHERE p.bowling_style LIKE '%fast%' AND d.phase = 'powerplay' GROUP BY v.id, v.name, v.city HAVING COUNT(CASE WHEN d.is_legal_ball = true THEN 1 END) >= 300 ORDER BY powerplay_economy"
+},
+{
+    "text_input": "which venues have highest percentage of matches decided by DLS",
+    "output": "SELECT v.id as venue_id, v.name, v.city, COUNT(DISTINCT m.id) as total_matches, COUNT(CASE WHEN m.dls_applied = true THEN 1 END) as dls_matches, ROUND((COUNT(CASE WHEN m.dls_applied = true THEN 1 END)::float / COUNT(DISTINCT m.id) * 100)::numeric, 2) as dls_percentage FROM ipl.venues v JOIN ipl.matches m ON v.id = m.venue_id GROUP BY v.id, v.name, v.city HAVING COUNT(DISTINCT m.id) >= 10 ORDER BY dls_percentage DESC"
+},
+{
+    "text_input": "which venues have highest average sixth wicket partnership",
+    "output": "SELECT v.id as venue_id, v.name, v.city, COUNT(DISTINCT m.id) as matches, ROUND(AVG(dbs.runs_scored), 2) as avg_sixth_wicket_partnership FROM ipl.venues v JOIN ipl.matches m ON v.id = m.venue_id JOIN ipl.innings i ON m.id = i.match_id JOIN ipl.detailed_batting_scorecard dbs ON i.id = dbs.innings_id WHERE dbs.batting_position = 6 GROUP BY v.id, v.name, v.city HAVING COUNT(DISTINCT m.id) >= 10 ORDER BY avg_sixth_wicket_partnership DESC"
+},
+{
+    "text_input": "which venues have highest percentage of matches with successful reviews",
+    "output": "SELECT v.id as venue_id, v.name, v.city, COUNT(DISTINCT m.id) as matches, COUNT(r.id) as total_reviews, COUNT(CASE WHEN r.outcome = 'successful' THEN 1 END) as successful_reviews, ROUND((COUNT(CASE WHEN r.outcome = 'successful' THEN 1 END)::float / NULLIF(COUNT(r.id), 0) * 100)::numeric, 2) as success_percentage FROM ipl.venues v JOIN ipl.matches m ON v.id = m.venue_id LEFT JOIN ipl.reviews r ON m.id = r.match_id GROUP BY v.id, v.name, v.city HAVING COUNT(DISTINCT m.id) >= 10 ORDER BY success_percentage DESC"
+}
+
+
+]

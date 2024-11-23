@@ -1,0 +1,74 @@
+[
+    {
+        "text_input": "matches where team batting second won in last over",
+        "output": "SELECT m.id, m.date, t1.full_name as team1, t2.full_name as team2, tw.full_name as winner, i2.total_score as chase_score FROM ipl.matches m JOIN ipl.teams t1 ON m.team1_id = t1.id JOIN ipl.teams t2 ON m.team2_id = t2.id JOIN ipl.teams tw ON m.winner_id = tw.id JOIN ipl.innings i2 ON m.id = i2.match_id WHERE i2.innings_number = 2 AND m.winner_id = i2.batting_team_id AND EXISTS (SELECT 1 FROM ipl.overs o WHERE o.innings_id = i2.id AND o.over_number = 19) ORDER BY m.date DESC"
+    },
+    {
+        "text_input": "matches where team defended total under 150",
+        "output": "SELECT m.date, t1.full_name as team_batting_first, i1.total_score as first_innings_score, t2.full_name as team_batting_second, i2.total_score as second_innings_score FROM ipl.matches m JOIN ipl.innings i1 ON m.id = i1.match_id AND i1.innings_number = 1 JOIN ipl.innings i2 ON m.id = i2.match_id AND i2.innings_number = 2 JOIN ipl.teams t1 ON i1.batting_team_id = t1.id JOIN ipl.teams t2 ON i2.batting_team_id = t2.id WHERE i1.total_score < 150 AND m.winner_id = i1.batting_team_id ORDER BY i1.total_score"
+    },
+    {
+        "text_input": "matches where kohli scored century in successful chase",
+        "output": "SELECT m.id, m.date, dbs.runs_scored, dbs.balls_faced, t.short_name as team, opp.short_name as opponent FROM ipl.detailed_batting_scorecard dbs JOIN ipl.matches m ON dbs.match_id = m.id JOIN ipl.players p ON dbs.batter_id = p.id JOIN ipl.teams t ON dbs.team_id = t.id JOIN ipl.teams opp ON (m.team1_id = opp.id OR m.team2_id = opp.id) AND opp.id != t.id WHERE p.name LIKE '%Kohli%' AND dbs.runs_scored >= 100 AND dbs.innings_number = 2 AND m.winner_id = dbs.team_id ORDER BY m.date"
+    },
+    {
+        "text_input": "matches with hat-tricks",
+        "output": "WITH consecutive_wickets AS (SELECT m.id, m.date, p.name as bowler, t.short_name as team, COUNT(*) as wickets FROM ipl.deliveries d JOIN ipl.overs o ON d.over_id = o.id JOIN ipl.innings i ON o.innings_id = i.id JOIN ipl.matches m ON i.match_id = m.id JOIN ipl.players p ON o.bowler_id = p.id JOIN ipl.teams t ON i.bowling_team_id = t.id WHERE d.is_wicket = true GROUP BY m.id, m.date, p.name, t.short_name HAVING COUNT(*) >= 3) SELECT * FROM consecutive_wickets ORDER BY date DESC"
+    },
+    {
+        "text_input": "matches where mi lost batting first",
+        "output": "SELECT m.id, m.date, i1.total_score as mi_score, t2.short_name as opponent, i2.total_score as chase_score FROM ipl.matches m JOIN ipl.innings i1 ON m.id = i1.match_id AND i1.innings_number = 1 JOIN ipl.innings i2 ON m.id = i2.match_id AND i2.innings_number = 2 JOIN ipl.teams t1 ON i1.batting_team_id = t1.id JOIN ipl.teams t2 ON i2.batting_team_id = t2.id WHERE t1.short_name = 'MI' AND m.winner_id = i2.batting_team_id ORDER BY m.date DESC"
+    },
+    {
+        "text_input": "matches with highest powerplay scores",
+        "output": "SELECT m.id, m.date, t.short_name as team, p.runs as powerplay_score, i.total_score FROM ipl.matches m JOIN ipl.innings i ON m.id = i.match_id JOIN ipl.phases p ON i.id = p.innings_id JOIN ipl.teams t ON i.batting_team_id = t.id WHERE p.phase_type = 'powerplay' ORDER BY p.runs DESC LIMIT 10"
+    },
+    {
+        "text_input": "matches where team won after losing 5 wickets in powerplay",
+        "output": "SELECT m.id, m.date, t.short_name as team, p.wickets as powerplay_wickets, i.total_score FROM ipl.matches m JOIN ipl.innings i ON m.id = i.match_id JOIN ipl.phases p ON i.id = p.innings_id JOIN ipl.teams t ON i.batting_team_id = t.id WHERE p.phase_type = 'powerplay' AND p.wickets >= 5 AND m.winner_id = i.batting_team_id ORDER BY m.date DESC"
+    },
+    {
+        "text_input": "matches where gayle scored fifty in less than 20 balls",
+        "output": "SELECT DISTINCT id as match_id, date, team, team_id, player_name, running_score as score_at_fifty, balls_faced as balls_to_fifty FROM (SELECT m.id, m.date, t.short_name as team, t.id as team_id, p.name as player_name, d.batter_id, o.over_number, d.ball_number, SUM(d.runs_batter) OVER (PARTITION BY m.id, d.batter_id ORDER BY o.over_number, d.ball_number) as running_score, COUNT(CASE WHEN d.is_legal_ball THEN 1 END) OVER (PARTITION BY m.id, d.batter_id ORDER BY o.over_number, d.ball_number) as balls_faced FROM ipl.matches m JOIN ipl.innings i ON m.id = i.match_id JOIN ipl.overs o ON i.id = o.innings_id JOIN ipl.deliveries d ON o.id = d.over_id JOIN ipl.players p ON d.batter_id = p.id JOIN ipl.teams t ON i.batting_team_id = t.id WHERE p.name LIKE '%Gayle%') running_total WHERE running_score >= 50 AND balls_faced < 20 ORDER BY balls_to_fifty"
+    },
+    {
+        "text_input": "matches with highest margin of victory by runs",
+        "output": "SELECT m.id, m.date, t1.short_name as winner, t2.short_name as loser, m.win_margin as margin FROM ipl.matches m JOIN ipl.teams t1 ON m.winner_id = t1.id JOIN ipl.teams t2 ON (m.team1_id = t2.id OR m.team2_id = t2.id) AND t2.id != t1.id WHERE m.win_margin_type = 'runs' ORDER BY m.win_margin DESC LIMIT 10"
+    },
+    {
+        "text_input": "matches where maxwell hit most sixes",
+        "output": "SELECT m.id, m.date, dbs.sixes, dbs.runs_scored, t.short_name as team FROM ipl.detailed_batting_scorecard dbs JOIN ipl.matches m ON dbs.match_id = m.id JOIN ipl.players p ON dbs.batter_id = p.id JOIN ipl.teams t ON dbs.team_id = t.id WHERE p.name LIKE '%Maxwell%' ORDER BY dbs.sixes DESC LIMIT 10"
+    },
+    {
+        "text_input": "matches where both teams scored 200+",
+        "output": "SELECT m.id, m.date, t1.short_name as team1, i1.total_score as score1, t2.short_name as team2, i2.total_score as score2 FROM ipl.matches m JOIN ipl.innings i1 ON m.id = i1.match_id AND i1.innings_number = 1 JOIN ipl.innings i2 ON m.id = i2.match_id AND i2.innings_number = 2 JOIN ipl.teams t1 ON i1.batting_team_id = t1.id JOIN ipl.teams t2 ON i2.batting_team_id = t2.id WHERE i1.total_score >= 200 AND i2.total_score >= 200 ORDER BY (i1.total_score + i2.total_score) DESC"
+    },
+    {
+        "text_input": "matches where bowler conceded 50+ runs in 4 overs",
+        "output": "SELECT m.id, m.date, p.name as bowler, dbs.runs_conceded, dbs.overs_bowled, t.short_name as team FROM ipl.detailed_bowling_scorecard dbs JOIN ipl.matches m ON dbs.match_id = m.id JOIN ipl.players p ON dbs.bowler_id = p.id JOIN ipl.teams t ON dbs.team_id = t.id WHERE dbs.runs_conceded >= 50 AND CAST(SPLIT_PART(dbs.overs_bowled, '.', 1) AS INTEGER) * 6 + CAST(SPLIT_PART(dbs.overs_bowled, '.', 2) AS INTEGER) <= 24 ORDER BY dbs.runs_conceded DESC"
+    },
+    {
+        "text_input": "matches with most extras in an innings",
+        "output": "SELECT m.id, m.date, t.short_name as bowling_team, i.total_extras, i.wides, i.noballs as no_balls FROM ipl.matches m JOIN ipl.innings i ON m.id = i.match_id JOIN ipl.teams t ON i.bowling_team_id = t.id ORDER BY i.total_extras DESC LIMIT 10"
+    },
+    {
+        "text_input": "matches where team won despite losing more wickets",
+        "output": "SELECT m.id, m.date, tw.short_name as winner, iw.wickets as winner_wickets, tl.short_name as loser, il.wickets as loser_wickets FROM ipl.matches m JOIN ipl.innings iw ON m.id = iw.match_id JOIN ipl.innings il ON m.id = il.match_id AND il.id != iw.id JOIN ipl.teams tw ON m.winner_id = tw.id JOIN ipl.teams tl ON (m.team1_id = tl.id OR m.team2_id = tl.id) AND tl.id != tw.id WHERE iw.batting_team_id = m.winner_id AND iw.wickets > il.wickets ORDER BY (iw.wickets - il.wickets) DESC"
+    },
+    {
+        "text_input": "matches where a team scored less than 100 runs",
+        "output": "SELECT m.id as match_id, t1.id as team_id, m.date, t1.full_name as team, i1.total_score FROM ipl.matches m JOIN ipl.innings i1 ON m.id = i1.match_id JOIN ipl.teams t1 ON i1.batting_team_id = t1.id WHERE i1.total_score < 100 AND m.result_type != 'no result' AND m.dls_applied = FALSE ORDER BY i1.total_score DESC"
+    },
+    {
+        "text_input": "matches with most dot balls in powerplay",
+        "output": "SELECT m.id, m.date, t.short_name as bowling_team, COUNT(CASE WHEN d.runs_total = 0 AND d.is_legal_ball = true THEN 1 END) as dot_balls FROM ipl.matches m JOIN ipl.innings i ON m.id = i.match_id JOIN ipl.overs o ON i.id = o.innings_id JOIN ipl.deliveries d ON o.id = d.over_id JOIN ipl.teams t ON i.bowling_team_id = t.id WHERE d.phase = 'powerplay' GROUP BY m.id, m.date, t.short_name ORDER BY dot_balls DESC LIMIT 10"
+    },
+    {
+        "text_input": "matches with most runs in super over",
+        "output": "SELECT m.id, m.date, t.short_name as batting_team, i.total_score, i.wickets FROM ipl.matches m JOIN ipl.innings i ON m.id = i.match_id JOIN ipl.teams t ON i.batting_team_id = t.id WHERE m.super_over = true AND i.is_super_over = true ORDER BY i.total_score DESC"
+    },
+    {
+        "text_input": "average first innings powerplay score in ipl",
+        "output": "WITH powerplay_stats AS (SELECT p.runs, p.wickets, m.id as match_id, i.innings_number, t.short_name as batting_team FROM ipl.matches m JOIN ipl.innings i ON m.id = i.match_id JOIN ipl.phases p ON i.id = p.innings_id JOIN ipl.teams t ON i.batting_team_id = t.id WHERE p.phase_type = 'powerplay' AND p.balls >= 36 AND m.result_type != 'no result') SELECT ROUND(AVG(CASE WHEN innings_number = 1 THEN runs END), 2) as avg_first_innings_powerplay, MIN(runs) as lowest_powerplay_score, (SELECT batting_team FROM powerplay_stats WHERE runs = (SELECT MIN(runs) FROM powerplay_stats) LIMIT 1) as lowest_score_team, (SELECT match_id FROM powerplay_stats WHERE runs = (SELECT MIN(runs) FROM powerplay_stats) LIMIT 1) as lowest_score_match_id, MAX(runs) as highest_powerplay_score, (SELECT batting_team FROM powerplay_stats WHERE runs = (SELECT MAX(runs) FROM powerplay_stats) LIMIT 1) as highest_score_team, (SELECT match_id FROM powerplay_stats WHERE runs = (SELECT MAX(runs) FROM powerplay_stats) LIMIT 1) as highest_score_match_id, ROUND(AVG(CASE WHEN innings_number = 1 THEN wickets END), 2) as avg_first_innings_wickets FROM powerplay_stats"
+    }
+]

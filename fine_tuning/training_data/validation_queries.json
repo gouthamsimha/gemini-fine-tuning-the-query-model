@@ -1,0 +1,78 @@
+[
+    {
+        "text_input": "List all matches where the team won by more than 50 runs.",
+        "output": "SELECT m.id as match_id, m.date, t1.id as team1_id, t1.full_name as team1_name, t2.id as team2_id, t2.full_name as team2_name, m.winner_id, m.win_margin, m.win_margin_type FROM ipl.matches m JOIN ipl.teams t1 ON m.team1_id = t1.id JOIN ipl.teams t2 ON m.team2_id = t2.id WHERE m.win_margin > 50 AND m.win_margin_type = 'runs' ORDER BY m.win_margin DESC"
+    },
+    {
+        "text_input": "Find players with more than 100 sixes in their career.",
+        "output": "SELECT ba.player_id, ba.player_name, ba.team_id, ba.team_full_name, SUM(ba.sixes) as total_sixes FROM ipl.batting_aggregate ba GROUP BY ba.player_id, ba.player_name, ba.team_id, ba.team_full_name HAVING SUM(ba.sixes) > 100 ORDER BY total_sixes DESC"
+    },
+    {
+        "text_input": "Get the top 5 teams with the highest average first innings score.",
+        "output": "SELECT t.id as team_id, t.full_name as team_name, AVG(i.total_score) as avg_first_innings_score FROM ipl.innings i JOIN ipl.teams t ON i.batting_team_id = t.id JOIN ipl.matches m ON i.match_id = m.id WHERE i.innings_number = 1 GROUP BY t.id, t.full_name ORDER BY avg_first_innings_score DESC LIMIT 5"
+    },
+    {
+        "text_input": "List venues that have hosted more than 20 matches.",
+        "output": "SELECT v.id as venue_id, v.name as venue_name, v.city, COUNT(m.id) as total_matches FROM ipl.venues v JOIN ipl.matches m ON v.id = m.venue_id GROUP BY v.id, v.name, v.city HAVING COUNT(m.id) > 20 ORDER BY total_matches DESC"
+    },
+    {
+        "text_input": "Show players who have taken more than 150 wickets in their career.",
+        "output": "SELECT ba.player_id, ba.player_name, ba.team_id, ba.team_full_name, SUM(ba.wickets) as total_wickets FROM ipl.bowling_aggregate ba GROUP BY ba.player_id, ba.player_name, ba.team_id, ba.team_full_name HAVING SUM(ba.wickets) > 150 ORDER BY total_wickets DESC"
+    },
+    {
+        "text_input": "Find all matches that ended in a tie.",
+        "output": "SELECT m.id as match_id, m.date, t1.id as team1_id, t1.full_name as team1_name, t2.id as team2_id, t2.full_name as team2_name, m.result_type FROM ipl.matches m JOIN ipl.teams t1 ON m.team1_id = t1.id JOIN ipl.teams t2 ON m.team2_id = t2.id WHERE m.result_type = 'tie' ORDER BY m.date DESC"
+    },
+    {
+        "text_input": "List the top 10 highest individual scores in IPL history.",
+        "output": "SELECT dbs.match_id, dbs.innings_id, dbs.batter_id, dbs.batter_name, dbs.runs_scored, dbs.balls_faced, dbs.strike_rate FROM ipl.detailed_batting_scorecard dbs ORDER BY dbs.runs_scored DESC, dbs.balls_faced ASC LIMIT 10"
+    },
+    {
+        "text_input": "Show teams with the most championships won.",
+        "output": "SELECT t.id as team_id, t.full_name as team_name, COUNT(pt.id) as titles_won FROM ipl.teams t JOIN ipl.points_table pt ON t.id = pt.team_id WHERE pt.winner = TRUE GROUP BY t.id, t.full_name ORDER BY titles_won DESC"
+    },
+    {
+        "text_input": "Find matches where the player was both the captain and the player of the match.",
+        "output": "SELECT m.id as match_id, m.date, t.id as team_id, t.full_name as team_name, p.id as player_id, p.name as player_name FROM ipl.matches m JOIN ipl.player_match_roles pmr ON m.id = pmr.match_id AND pmr.is_captain = TRUE JOIN ipl.players p ON pmr.player_id = p.id JOIN ipl.points_table pt ON m.season_id = pt.season_id AND pt.team_id = m.winner_id JOIN ipl.batting_aggregate ba ON p.id = ba.player_id AND ba.match_id = m.id WHERE pt.winner = TRUE AND m.player_of_match_id = p.id ORDER BY m.date DESC"
+    },
+    {
+        "text_input": "Find all centuries scored in IPL matches.",
+        "output": "SELECT m.id as match_id, m.date, dbs.batter_id as player_id, dbs.batter_name as player_name, dbs.runs_scored, dbs.balls_faced, dbs.team as batting_team FROM ipl.detailed_batting_scorecard dbs JOIN ipl.matches m ON dbs.match_id = m.id WHERE dbs.runs_scored >= 100 ORDER BY m.date DESC"
+    },
+    {
+        "text_input": "List all matches where no team reached 150 runs.",
+        "output": "SELECT m.id as match_id, m.date, t1.short_name as team1, i1.total_score as team1_score, t2.short_name as team2, i2.total_score as team2_score FROM ipl.matches m JOIN ipl.innings i1 ON m.id = i1.match_id AND i1.innings_number = 1 JOIN ipl.innings i2 ON m.id = i2.match_id AND i2.innings_number = 2 JOIN ipl.teams t1 ON i1.batting_team_id = t1.id JOIN ipl.teams t2 ON i2.batting_team_id = t2.id WHERE i1.total_score < 150 AND i2.total_score < 150 ORDER BY m.date DESC"
+    },
+    {
+        "text_input": "Identify players with a strike rate above 180 in the powerplay phase.",
+        "output": "SELECT p.id as player_id, p.name as player_name, SUM(d.runs_batter) as total_runs, SUM(CASE WHEN d.is_legal_ball THEN 1 ELSE 0 END) as total_balls_faced, ROUND((SUM(d.runs_batter)::numeric / NULLIF(SUM(CASE WHEN d.is_legal_ball THEN 1 ELSE 0 END), 0)) * 100, 2) as strike_rate FROM ipl.deliveries d JOIN ipl.overs o ON d.over_id = o.id JOIN ipl.innings i ON o.innings_id = i.id JOIN ipl.players p ON d.batter_id = p.id WHERE d.phase = 'powerplay' GROUP BY p.id, p.name HAVING SUM(CASE WHEN d.is_legal_ball THEN 1 ELSE 0 END) >= 10 AND ROUND((SUM(d.runs_batter)::numeric / NULLIF(SUM(CASE WHEN d.is_legal_ball THEN 1 ELSE 0 END), 0)) * 100, 2) > 180 ORDER BY strike_rate DESC"
+    },
+    {
+        "text_input": "Retrieve matches where the winning team chased down a target under 20 overs.",
+        "output": "SELECT m.id as match_id, m.date, tw.short_name as winning_team, tw.id as winning_team_id, i2.total_score as chase_score, o.over_number FROM ipl.matches m JOIN ipl.innings i1 ON m.id = i1.match_id AND i1.innings_number = 1 JOIN ipl.innings i2 ON m.id = i2.match_id AND i2.innings_number = 2 JOIN ipl.teams tw ON m.winner_id = tw.id JOIN ipl.overs o ON i2.id = o.innings_id WHERE i2.total_score >= i1.total_score AND o.over_number < 20 ORDER BY m.date DESC"
+    },
+    {
+        "text_input": "List matches where a player took more than 5 wickets in an innings.",
+        "output": "SELECT dbs.match_id, dbs.innings_id, dbs.bowler_id, dbs.bowler_name, dbs.bowling_team, dbs.team_id as bowling_team_id, t_batting.short_name as batting_team, t_batting.id as batting_team_id, dbs.wickets, dbs.overs_bowled, dbs.runs_conceded, dbs.economy_rate FROM ipl.detailed_bowling_scorecard dbs JOIN ipl.innings i ON dbs.innings_id = i.id JOIN ipl.teams t_batting ON i.batting_team_id = t_batting.id WHERE dbs.wickets > 5 ORDER BY dbs.wickets DESC, dbs.economy_rate ASC"
+    },
+    {
+        "text_input": "Retrieve matches that had a super over due to a tie.",
+        "output": "SELECT m.id as match_id, m.date, t1.short_name as team1, t2.short_name as team2, m.winner_id, so.batting_team_id as super_over_batting_team, so.total_score as super_over_score FROM ipl.matches m JOIN ipl.innings i1 ON m.id = i1.match_id AND i1.innings_number = 1 JOIN ipl.innings i2 ON m.id = i2.match_id AND i2.innings_number = 2 JOIN ipl.innings so ON m.id = so.match_id AND so.is_super_over = TRUE JOIN ipl.teams t1 ON i1.batting_team_id = t1.id JOIN ipl.teams t2 ON i2.batting_team_id = t2.id WHERE m.super_over = TRUE AND m.result_type = 'tie' ORDER BY m.date DESC"
+    },
+    {
+        "text_input": "Find venues where more than 30 matches have been played.",
+        "output": "SELECT v.id as venue_id, v.name as venue_name, v.city, COUNT(m.id) as total_matches FROM ipl.venues v JOIN ipl.matches m ON v.id = m.venue_id GROUP BY v.id, v.name, v.city HAVING COUNT(m.id) > 30 ORDER BY total_matches DESC"
+    },
+    {
+        "text_input": "Identify the top 3 highest individual scores in IPL finals.",
+        "output": "SELECT dbs.batter_id, p.name as batter_name, m.id as match_id, m.date, dbs.runs_scored, dbs.balls_faced FROM ipl.detailed_batting_scorecard dbs JOIN ipl.matches m ON dbs.match_id = m.id JOIN ipl.players p ON dbs.batter_id = p.id WHERE m.stage = 'Final' ORDER BY dbs.runs_scored DESC, dbs.balls_faced ASC LIMIT 3"
+    },
+    {
+        "text_input": "Average first innings powerplay score in IPL.",
+        "output": "SELECT AVG(p.runs) as avg_powerplay_score FROM ipl.phases p JOIN ipl.innings i ON p.innings_id = i.id JOIN ipl.matches m ON i.match_id = m.id WHERE p.phase_type = 'powerplay' AND i.innings_number = 1"
+    },
+    {
+        "text_input": "Find matches where a captain also took a wicket.",
+        "output": "SELECT DISTINCT m.id as match_id, m.date, p.id as player_id, p.name as player_name, t.short_name as team FROM ipl.matches m JOIN ipl.player_match_roles pmr ON m.id = pmr.match_id AND pmr.is_captain = TRUE JOIN ipl.player_match_performance pmp ON pmr.player_id = pmp.player_id AND m.id = pmp.match_id JOIN ipl.players p ON pmp.player_id = p.id JOIN ipl.teams t ON pmp.team_id = t.id WHERE pmp.did_bowl = TRUE AND pmp.wickets > 0 ORDER BY m.date DESC"
+    }
+]
