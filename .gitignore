@@ -1,0 +1,20 @@
+# Python virtual environment
+gemini/
+venv/
+env/
+.env/
+.venv/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+.DS_Store
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# WandB
+wandb/
